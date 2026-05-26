@@ -69,7 +69,6 @@
             </div>
         </div>
 
-        <!-- 左右VS布局 -->
         <div id="battleArea" class="mb-10">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center px-4 lg:px-8">
                 <!-- 左侧卡片 - 保持原始宽度 -->
@@ -157,10 +156,8 @@
             { id: 20, title: "Sacrifice", tournament: "英雄联盟 S15 2025", year: "2025", type: "league", bvid: "BV1fr4kzBEY1" }
         ];
 
-        // ====================== 视频互斥播放======================
         let activeVideoId = null;
         
-        // 生成B站播放器iframe
         function getBilibiliEmbed(bvid, id) {
             return `
             <iframe
@@ -175,7 +172,6 @@
             `;
         }
 
-        // 暂停指定视频
         function pauseVideo(id) {
             const iframe = document.getElementById(id);
             if (iframe && iframe.contentWindow) {
@@ -183,7 +179,6 @@
             }
         }
 
-        // 播放指定视频并暂停另一个
         function playVideoExclusive(id) {
             if (activeVideoId && activeVideoId !== id) {
                 pauseVideo(activeVideoId);
@@ -191,7 +186,6 @@
             activeVideoId = id;
         }
 
-        // 监听B站播放器消息
         window.addEventListener('message', function(e) {
             if (e.origin !== 'https://player.bilibili.com') return;
             
@@ -201,11 +195,10 @@
                     playVideoExclusive(data.id);
                 }
             } catch (err) {
-                // 忽略非JSON消息
+
             }
         });
 
-        // ====================== 赛制逻辑 ======================
         let allSongs = [];
         let remainingSongs = [];
         let winners = [];
@@ -227,7 +220,6 @@
             finishRounds = 0;
             activeVideoId = null;
 
-            // 计算总轮数：16首歌，淘汰赛需要15场对决
             totalRounds = allSongs.length - 1;
             
             updateProgress();
@@ -245,38 +237,30 @@
         }
 
         function nextMatch() {
-            // 检查是否结束
             if (winners.length === 1 && remainingSongs.length === 0) {
                 showWinner(winners[0]);
                 return;
             }
 
-            // 如果本轮剩余歌曲少于2首，进入下一轮
             if (remainingSongs.length < 2) {
-                // 将剩余的歌曲直接晋级
                 if (remainingSongs.length === 1) {
                     winners.push(remainingSongs[0]);
                 }
                 
-                // 进入下一轮
                 if (winners.length === 1) {
-                    // 只剩一个胜者，结束
                     showWinner(winners[0]);
                     return;
                 }
                 
-                // 开始新一轮对决
                 remainingSongs = shuffleArray([...winners]);
                 winners = [];
                 currentRound++;
                 updateStageText();
             }
 
-            // 确保有足够的歌曲进行对决
             if (remainingSongs.length >= 2) {
                 currentMatchup = remainingSongs.splice(0, 2);
                 
-                // 防止同一首歌对比
                 if (currentMatchup[0].id === currentMatchup[1].id) {
                     remainingSongs.push(currentMatchup[1]);
                     if (remainingSongs.length >= 2) {
@@ -292,16 +276,13 @@
             const winner = side === "left" ? currentMatchup[0] : currentMatchup[1];
             const cardId = side === "left" ? "leftCard" : "rightCard";
             
-            // 高亮选中的卡片
             document.getElementById(cardId).classList.add('border-accent', 'glow');
             
-            // 将胜者加入下一轮
             winners.push(winner);
             
             finishRounds++;
             updateProgress();
 
-            // 暂停所有视频
             pauseVideo('leftVideo');
             pauseVideo('rightVideo');
             activeVideoId = null;
@@ -327,7 +308,6 @@
             document.getElementById('rightYear').textContent = right.year;
             document.getElementById('rightMV').innerHTML = getBilibiliEmbed(right.bvid, 'rightVideo');
 
-            // 为iframe注册播放事件
             setupVideoListeners();
         }
 
@@ -373,7 +353,6 @@
             document.getElementById('winnerInfo').textContent = `${top.tournament} - ${top.year}`;
             document.getElementById('winnerMV').innerHTML = getBilibiliEmbed(top.bvid, 'winnerVideo');
             
-            // 设置冠军视频播放事件
             const winnerIframe = document.getElementById('winnerVideo');
             if (winnerIframe) {
                 winnerIframe.onload = function() {
@@ -382,7 +361,6 @@
             }
         }
 
-        // ====================== 事件监听 ======================
         document.querySelectorAll('.vote-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
@@ -405,7 +383,6 @@
             initGame();
         });
 
-        // 鼠标悬浮播放（支持互斥逻辑）
         document.querySelectorAll('.video-box').forEach(box => {
             box.addEventListener('mouseenter', () => {
                 const iframe = box.querySelector('iframe');
