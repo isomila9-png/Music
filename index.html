@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电竞赛事金曲对决</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0A1428',
+                        secondary: '#005A82',
+                        accent: '#C89B3C',
+                        league: '#00ACB1',
+                        valorant: '#FF4655',
+                        dark: '#010A13',
+                        light: '#F0E6D2'
+                    },
+                    fontFamily: {
+                        game: ['Arial', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+            .glow { box-shadow: 0 0 20px rgba(200, 155, 60, 0.5); }
+            .card-hover { transition: all 0.3s ease; }
+            .card-hover:hover { transform: translateY(-5px); }
+            .vs-text { font-size: 3rem; font-weight: bold; }
+            .video-frame {
+                width: 100% !important;
+                height: 100% !important;
+                aspect-ratio: inherit !important;
+                display: block !important;
+                border: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-primary text-light min-h-screen">
+    <header class="bg-dark py-4 border-b-2 border-accent sticky top-0 z-50">
+        <div class="max-w-full mx-auto px-2 flex justify-between items-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-accent text-shadow">
+                <i class="fa fa-music mr-2"></i>电竞赛事金曲对决
+            </h1>
+            <div class="flex items-center gap-4">
+                <span id="stageInfo" class="text-lg font-semibold">分组海选</span>
+                <button id="resetBtn" class="bg-valorant hover:bg-valorant/80 text-white px-4 py-2 rounded transition-colors">
+                    <i class="fa fa-refresh mr-1"></i>重新开始
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-full mx-auto px-2 py-6">
+        <div class="mb-6 max-w-7xl mx-auto">
+            <div class="flex justify-between mb-2">
+                <span>当前进度</span>
+                <span id="progressText">0 / 0</span>
+            </div>
+            <div class="w-full bg-dark rounded-full h-4 overflow-hidden">
+                <div id="progressBar" class="bg-gradient-to-r from-league to-valorant h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 左右VS布局 -->
+        <div id="battleArea" class="mb-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center px-4 lg:px-8">
+                <!-- 左侧卡片 - 保持原始宽度 -->
+                <div class="lg:col-span-5">
+                    <div id="leftCard" class="bg-dark rounded-xl overflow-hidden card-hover border-2 border-transparent cursor-pointer w-full">
+                        <div class="w-full aspect-video bg-black relative video-box">
+                            <div id="leftMV" class="w-full h-full"></div>
+                            <div class="absolute top-3 left-3 bg-league/80 px-3 py-1 text-white font-bold rounded z-10">
+                                <span id="leftTournament">赛事</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 id="leftTitle" class="text-xl font-bold mb-1">歌曲名称</h3>
+                            <p id="leftYear" class="text-gray-400 mb-3">年份</p>
+                            <button class="vote-btn w-full bg-league hover:bg-league/80 text-white py-3 rounded-lg font-bold text-lg transition-colors" data-side="left">
+                                <i class="fa fa-thumbs-up mr-2"></i>投票给这首
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 flex justify-center items-center">
+                    <div class="text-center">
+                        <span class="vs-text text-accent">VS</span>
+                        <p class="text-gray-400 mt-1">选择你更喜欢的一首</p>
+                    </div>
+                </div>
+
+                <!-- 右侧卡片 - 保持原始宽度 -->
+                <div class="lg:col-span-5">
+                    <div id="rightCard" class="bg-dark rounded-xl overflow-hidden card-hover border-2 border-transparent cursor-pointer w-full">
+                        <div class="w-full aspect-video bg-black relative video-box">
+                            <div id="rightMV" class="w-full h-full"></div>
+                            <div class="absolute top-3 left-3 bg-valorant/80 px-3 py-1 text-white font-bold rounded z-10">
+                                <span id="rightTournament">赛事</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 id="rightTitle" class="text-xl font-bold mb-1">歌曲名称</h3>
+                            <p id="rightYear" class="text-gray-400 mb-3">年份</p>
+                            <button class="vote-btn w-full bg-valorant hover:bg-valorant/80 text-white py-3 rounded-lg font-bold text-lg transition-colors" data-side="right">
+                                <i class="fa fa-thumbs-up mr-2"></i>投票给这首
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultArea" class="hidden text-center py-12">
+            <h2 class="text-4xl font-bold text-accent mb-8 text-shadow">🏆 最终冠军 🏆</h2>
+            <div class="max-w-6xl mx-auto bg-dark rounded-lg overflow-hidden glow">
+                <div class="w-full aspect-video bg-black relative video-box">
+                    <div id="winnerMV" class="w-full h-full"></div>
+                </div>
+                <div class="p-6">
+                    <h3 id="winnerTitle" class="text-3xl font-bold mb-2">歌曲名称</h3>
+                    <p id="winnerInfo" class="text-xl text-gray-400 mb-4">赛事 - 年份</p>
+                </div>
+            </div>
+            <button id="playAgainBtn" class="mt-8 bg-accent hover:bg-accent/80 text-dark px-8 py-3 rounded-lg font-bold text-lg transition-colors">
+                <i class="fa fa-play mr-2"></i>再来一次
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // ====================== 歌曲数据 ======================
+        const songs = [
+            { id: 1, title: "Enemy", tournament: "双城之战主题曲", year: "2014", type: "league", bvid: "BV1wq4y1R7DC" },
+            { id: 2, title: "Worlds Collide", tournament: "英雄联盟 S5", year: "2015", type: "league", bvid: "BV1GK411K7ek" },
+            { id: 3, title: "Ignite", tournament: "英雄联盟 S6", year: "2016", type: "league", bvid: "BV1uV411m7kB" },
+            { id: 4, title: "Legends Never Die", tournament: "英雄联盟 S7", year: "2017", type: "league", bvid: "BV1px411M7sn" },
+            { id: 5, title: "RISE", tournament: "英雄联盟 S8", year: "2018", type: "league", bvid: "BV1YW411U7Gi" },
+            { id: 6, title: "Phoenix", tournament: "英雄联盟 S9", year: "2019", type: "league", bvid: "BV1jE411f7HM" },
+            { id: 7, title: "Take Over", tournament: "英雄联盟 S10", year: "2020", type: "league", bvid: "BV1qh411R7Fu" },
+            { id: 8, title: "Burn It All Down", tournament: "英雄联盟 S11", year: "2021", type: "league", bvid: "BV17Q4y1C7rP" },
+            { id: 9, title: "STAR WALKIN'", tournament: "英雄联盟 S12", year: "2022", type: "league", bvid: "BV1A841147Ef" },
+            { id: 10, title: "GODS", tournament: "英雄联盟 S13", year: "2023", type: "league", bvid: "BV1am4y1V7vf" },
+            { id: 11, title: "Heavyweight", tournament: "英雄联盟 S14", year: "2024", type: "league", bvid: "BV1apsYeeEYC" },
+            { id: 12, title: "Die For You", tournament: "无畏契约 2021冠军赛", year: "2021", type: "valorant", bvid: "BV1SP4y1G7x3" },
+            { id: 13, title: "Fire Again", tournament: "无畏契约 2022冠军赛", year: "2022", type: "valorant", bvid: "BV1ig411r7wt" },
+            { id: 14, title: "Ticking Away", tournament: "无畏契约 2023冠军赛", year: "2023", type: "valorant", bvid: "BV1514y1B7bz" },
+            { id: 15, title: "Super Power", tournament: "无畏契约 2024冠军赛", year: "2024", type: "valorant", bvid: "BV1nT42167LK" },
+            { id: 20, title: "Sacrifice", tournament: "英雄联盟 S15 2025", year: "2025", type: "league", bvid: "BV1fr4kzBEY1" }
+        ];
+
+        // ====================== 视频互斥播放======================
+        let activeVideoId = null;
+        
+        // 生成B站播放器iframe
+        function getBilibiliEmbed(bvid, id) {
+            return `
+            <iframe
+                id="${id}"
+                src="https://player.bilibili.com/player.html?bvid=${bvid}&page=1&high_quality=1&danmaku=0&autoplay=0&noCookie=1&start=0"
+                scrolling="no"
+                frameborder="0"
+                allowfullscreen
+                allow="autoplay; fullscreen"
+                class="video-frame">
+            </iframe>
+            `;
+        }
+
+        // 暂停指定视频
+        function pauseVideo(id) {
+            const iframe = document.getElementById(id);
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage('{"cmd":"pause"}', '*');
+            }
+        }
+
+        // 播放指定视频并暂停另一个
+        function playVideoExclusive(id) {
+            if (activeVideoId && activeVideoId !== id) {
+                pauseVideo(activeVideoId);
+            }
+            activeVideoId = id;
+        }
+
+        // 监听B站播放器消息
+        window.addEventListener('message', function(e) {
+            if (e.origin !== 'https://player.bilibili.com') return;
+            
+            try {
+                const data = JSON.parse(e.data);
+                if (data.event === 'play' && data.id) {
+                    playVideoExclusive(data.id);
+                }
+            } catch (err) {
+                // 忽略非JSON消息
+            }
+        });
+
+        // ====================== 赛制逻辑 ======================
+        let allSongs = [];
+        let remainingSongs = [];
+        let winners = [];
+        let currentRound = 1;
+        let totalRounds = 0;
+        let stage = "knockout";
+        let currentMatchup = [];
+        let finishRounds = 0;
+
+        document.addEventListener('DOMContentLoaded', initGame);
+
+        function initGame() {
+            // 重置所有状态
+            allSongs = shuffleArray([...songs]);
+            remainingSongs = [...allSongs];
+            winners = [];
+            currentRound = 1;
+            stage = "knockout";
+            finishRounds = 0;
+            activeVideoId = null;
+
+            // 计算总轮数：16首歌，淘汰赛需要15场对决
+            totalRounds = allSongs.length - 1;
+            
+            updateProgress();
+            updateStageText();
+            nextMatch();
+        }
+
+        function shuffleArray(arr) {
+            let a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function nextMatch() {
+            // 检查是否结束
+            if (winners.length === 1 && remainingSongs.length === 0) {
+                showWinner(winners[0]);
+                return;
+            }
+
+            // 如果本轮剩余歌曲少于2首，进入下一轮
+            if (remainingSongs.length < 2) {
+                // 将剩余的歌曲直接晋级
+                if (remainingSongs.length === 1) {
+                    winners.push(remainingSongs[0]);
+                }
+                
+                // 进入下一轮
+                if (winners.length === 1) {
+                    // 只剩一个胜者，结束
+                    showWinner(winners[0]);
+                    return;
+                }
+                
+                // 开始新一轮对决
+                remainingSongs = shuffleArray([...winners]);
+                winners = [];
+                currentRound++;
+                updateStageText();
+            }
+
+            // 确保有足够的歌曲进行对决
+            if (remainingSongs.length >= 2) {
+                currentMatchup = remainingSongs.splice(0, 2);
+                
+                // 防止同一首歌对比
+                if (currentMatchup[0].id === currentMatchup[1].id) {
+                    remainingSongs.push(currentMatchup[1]);
+                    if (remainingSongs.length >= 2) {
+                        currentMatchup[1] = remainingSongs.shift();
+                    }
+                }
+            }
+            
+            updateUI();
+        }
+
+        function vote(side) {
+            const winner = side === "left" ? currentMatchup[0] : currentMatchup[1];
+            const cardId = side === "left" ? "leftCard" : "rightCard";
+            
+            // 高亮选中的卡片
+            document.getElementById(cardId).classList.add('border-accent', 'glow');
+            
+            // 将胜者加入下一轮
+            winners.push(winner);
+            
+            finishRounds++;
+            updateProgress();
+
+            // 暂停所有视频
+            pauseVideo('leftVideo');
+            pauseVideo('rightVideo');
+            activeVideoId = null;
+
+            setTimeout(() => {
+                document.getElementById('leftCard').classList.remove('border-accent', 'glow');
+                document.getElementById('rightCard').classList.remove('border-accent', 'glow');
+                nextMatch();
+            }, 800);
+        }
+
+        function updateUI() {
+            const left = currentMatchup[0];
+            const right = currentMatchup[1];
+            
+            document.getElementById('leftTitle').textContent = left.title;
+            document.getElementById('leftTournament').textContent = left.tournament;
+            document.getElementById('leftYear').textContent = left.year;
+            document.getElementById('leftMV').innerHTML = getBilibiliEmbed(left.bvid, 'leftVideo');
+
+            document.getElementById('rightTitle').textContent = right.title;
+            document.getElementById('rightTournament').textContent = right.tournament;
+            document.getElementById('rightYear').textContent = right.year;
+            document.getElementById('rightMV').innerHTML = getBilibiliEmbed(right.bvid, 'rightVideo');
+
+            // 为iframe注册播放事件
+            setupVideoListeners();
+        }
+
+        function setupVideoListeners() {
+            const leftIframe = document.getElementById('leftVideo');
+            const rightIframe = document.getElementById('rightVideo');
+
+            if (leftIframe) {
+                leftIframe.onload = function() {
+                    leftIframe.contentWindow.postMessage('{"cmd":"on","event":"play","id":"leftVideo"}', '*');
+                };
+            }
+
+            if (rightIframe) {
+                rightIframe.onload = function() {
+                    rightIframe.contentWindow.postMessage('{"cmd":"on","event":"play","id":"rightVideo"}', '*');
+                };
+            }
+        }
+
+        function updateStageText() {
+            let text;
+            if (winners.length === 1 && remainingSongs.length === 0) {
+                text = "最终决赛";
+            } else if (currentRound === 1) {
+                text = `淘汰赛 第${currentRound}轮`;
+            } else {
+                text = `第${currentRound}轮对决`;
+            }
+            document.getElementById("stageInfo").textContent = text;
+        }
+
+        function updateProgress() {
+            const percent = (finishRounds / totalRounds) * 100;
+            document.getElementById('progressBar').style.width = percent + "%";
+            document.getElementById('progressText').textContent = `${finishRounds}/${totalRounds}`;
+        }
+
+        function showWinner(top) {
+            document.getElementById('battleArea').classList.add('hidden');
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('winnerTitle').textContent = top.title;
+            document.getElementById('winnerInfo').textContent = `${top.tournament} - ${top.year}`;
+            document.getElementById('winnerMV').innerHTML = getBilibiliEmbed(top.bvid, 'winnerVideo');
+            
+            // 设置冠军视频播放事件
+            const winnerIframe = document.getElementById('winnerVideo');
+            if (winnerIframe) {
+                winnerIframe.onload = function() {
+                    winnerIframe.contentWindow.postMessage('{"cmd":"on","event":"play","id":"winnerVideo"}', '*');
+                };
+            }
+        }
+
+        // ====================== 事件监听 ======================
+        document.querySelectorAll('.vote-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                vote(btn.dataset.side);
+            });
+        });
+
+        document.getElementById('leftCard').addEventListener('click', () => vote("left"));
+        document.getElementById('rightCard').addEventListener('click', () => vote("right"));
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('battleArea').classList.remove('hidden');
+            document.getElementById('resultArea').classList.add('hidden');
+            initGame();
+        });
+
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            document.getElementById('battleArea').classList.remove('hidden');
+            document.getElementById('resultArea').classList.add('hidden');
+            initGame();
+        });
+
+        // 鼠标悬浮播放（支持互斥逻辑）
+        document.querySelectorAll('.video-box').forEach(box => {
+            box.addEventListener('mouseenter', () => {
+                const iframe = box.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    setTimeout(() => {
+                        iframe.contentWindow.postMessage('{"cmd":"play"}', '*');
+                    }, 100);
+                }
+            });
+            
+            box.addEventListener('mouseleave', () => {
+                const iframe = box.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage('{"cmd":"pause"}', '*');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
